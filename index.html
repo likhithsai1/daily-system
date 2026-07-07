@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Daily System</title>
+<style>
+  :root{
+    --bg:#0f1115; --card:#171a21; --card2:#1e222b; --line:#262b36;
+    --text:#e8eaef; --dim:#8b93a3; --accent:#4f8cff; --green:#3ddc84;
+    --amber:#f0b84f; --red:#ff6b6b; --radius:14px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; font-size:15px;}
+  #app{max-width:520px; margin:0 auto; padding:12px 14px 84px;}
+  header{display:flex; align-items:center; justify-content:space-between; padding:6px 2px 12px;}
+  header h1{font-size:17px; margin:0; font-weight:700; letter-spacing:.2px;}
+  .hright{display:flex; align-items:center; gap:10px;}
+  #syncDot{width:9px; height:9px; border-radius:50%; background:var(--dim);}
+  #syncDot.ok{background:var(--green);} #syncDot.sync{background:var(--amber);} #syncDot.error{background:var(--red);}
+  #authBtn{background:var(--card2); color:var(--text); border:1px solid var(--line);
+    border-radius:20px; padding:6px 14px; font-size:13px; cursor:pointer;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:14px; margin-bottom:12px;}
+  .card h2{font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--dim); margin:0 0 12px;}
+  /* date nav */
+  .datenav{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
+  .datenav button{background:var(--card2); border:1px solid var(--line); color:var(--text);
+    border-radius:10px; width:38px; height:34px; font-size:16px; cursor:pointer;}
+  .datenav .dlabel{font-weight:700; font-size:15px;}
+  .datenav .dsub{color:var(--dim); font-size:12px; text-align:center;}
+  /* tasks */
+  .task{display:flex; align-items:center; gap:12px; padding:11px 6px; border-bottom:1px solid var(--line); cursor:pointer;}
+  .task:last-child{border-bottom:none;}
+  .task .box{width:24px; height:24px; min-width:24px; border-radius:8px; border:2px solid var(--dim);
+    display:flex; align-items:center; justify-content:center; font-size:14px; color:#0f1115; font-weight:800;}
+  .task.done .box{background:var(--green); border-color:var(--green);}
+  .task.rest .box{background:var(--card2); border-color:var(--line); color:var(--dim); font-size:11px; font-weight:600;}
+  .task .lbl{flex:1; line-height:1.35;}
+  .task.done .lbl{color:var(--dim); text-decoration:line-through;}
+  .task.rest .lbl{color:var(--dim); font-style:italic;}
+  .task .restbtn{background:none; border:1px solid var(--line); color:var(--dim); border-radius:8px;
+    padding:4px 9px; font-size:11px; cursor:pointer;}
+  .task.rest .restbtn{border-color:var(--amber); color:var(--amber);}
+  /* inputs */
+  .inrow{display:flex; gap:10px; margin-bottom:10px;}
+  .inrow:last-child{margin-bottom:0;}
+  .field{flex:1;}
+  .field label{display:block; font-size:11px; color:var(--dim); margin-bottom:5px;}
+  .field input, .field textarea{width:100%; background:var(--card2); border:1px solid var(--line);
+    color:var(--text); border-radius:10px; padding:9px 11px; font-size:15px; font-family:inherit;}
+  .field input:focus, .field textarea:focus{outline:none; border-color:var(--accent);}
+  .hint{font-size:11px; color:var(--dim); margin-top:4px;}
+  .hint.good{color:var(--green);}
+  /* lifts */
+  .lift{display:flex; gap:8px; margin-bottom:8px; align-items:center;}
+  .lift input{background:var(--card2); border:1px solid var(--line); color:var(--text);
+    border-radius:10px; padding:9px 10px; font-size:14px; min-width:0;}
+  .lift .ex{flex:2.4;} .lift .num{flex:1; text-align:center;}
+  .lift .del{background:none; border:none; color:var(--dim); font-size:17px; cursor:pointer; padding:2px 5px;}
+  .lifthint{font-size:11px; color:var(--dim); margin:-4px 0 8px 2px;}
+  .addbtn{width:100%; background:var(--card2); border:1px dashed var(--line); color:var(--dim);
+    border-radius:10px; padding:9px; font-size:13px; cursor:pointer;}
+  /* tabs */
+  nav{position:fixed; bottom:0; left:0; right:0; background:rgba(15,17,21,.92); backdrop-filter:blur(12px);
+    border-top:1px solid var(--line); display:flex; padding:6px 0 max(10px, env(safe-area-inset-bottom));}
+  nav button{flex:1; background:none; border:none; color:var(--dim); font-size:12px; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 0; font-family:inherit;}
+  nav button .ico{font-size:18px;}
+  nav button.active{color:var(--accent);}
+  /* history */
+  .stats{display:flex; gap:10px; margin-bottom:12px;}
+  .stat{flex:1; background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:12px; text-align:center;}
+  .stat .num{font-size:22px; font-weight:800;}
+  .stat .cap{font-size:11px; color:var(--dim); margin-top:3px;}
+  .grid{display:flex; flex-wrap:wrap; gap:5px;}
+  .cell{width:calc((100% - 30px)/7); aspect-ratio:1; border-radius:6px; background:var(--card2);
+    display:flex; align-items:center; justify-content:center; font-size:9px; color:var(--dim);}
+  .cell.s0{background:#3a2226;} .cell.s1{background:#4d3a1e;} .cell.s2{background:#274d33;} .cell.s3{background:var(--green); color:#0f1115; font-weight:700;}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th{color:var(--dim); font-weight:600; text-align:left; padding:6px 4px; font-size:11px; text-transform:uppercase; letter-spacing:.5px;}
+  td{padding:7px 4px; border-top:1px solid var(--line);}
+  /* settings */
+  .taskedit{display:flex; gap:8px; margin-bottom:8px; align-items:center;}
+  .taskedit input[type=text]{flex:1; background:var(--card2); border:1px solid var(--line);
+    color:var(--text); border-radius:10px; padding:9px 11px; font-size:14px; min-width:0;}
+  .taskedit label{font-size:10px; color:var(--dim); display:flex; align-items:center; gap:3px; white-space:nowrap;}
+  .taskedit .del{background:none; border:none; color:var(--dim); font-size:17px; cursor:pointer;}
+  .btnrow{display:flex; gap:10px; margin-top:10px;}
+  .btn{flex:1; background:var(--card2); border:1px solid var(--line); color:var(--text);
+    border-radius:10px; padding:10px; font-size:13px; cursor:pointer; text-align:center; font-family:inherit;}
+  .banner{background:#2a2416; border:1px solid #4d3a1e; color:var(--amber); border-radius:10px;
+    padding:10px 12px; font-size:12.5px; line-height:1.5; margin-bottom:12px;}
+  .hidden{display:none;}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Daily System</h1>
+    <div class="hright"><div id="syncDot" title="sync status"></div><button id="authBtn">Local</button></div>
+  </header>
+
+  <section id="tab-today">
+    <div class="datenav">
+      <button id="prevDay">‹</button>
+      <div><div class="dlabel" id="dateLabel"></div><div class="dsub" id="dateSub"></div></div>
+      <button id="nextDay">›</button>
+    </div>
+    <div class="card"><h2>Scorecard</h2><div id="taskList"></div></div>
+    <div class="card"><h2>Food & Body</h2>
+      <div class="inrow">
+        <div class="field"><label>Protein (g)</label><input id="proteinG" type="number" inputmode="numeric" placeholder="0"><div class="hint" id="proteinHint"></div></div>
+        <div class="field"><label>Calories</label><input id="calories" type="number" inputmode="numeric" placeholder="0"></div>
+        <div class="field"><label>Weight (kg)</label><input id="weightKg" type="number" inputmode="decimal" step="0.1" placeholder="—"></div>
+      </div>
+    </div>
+    <div class="card"><h2>Gym Log</h2>
+      <div id="liftList"></div>
+      <button class="addbtn" id="addLift">+ add exercise</button>
+    </div>
+    <div class="card"><h2>Note</h2>
+      <div class="field"><textarea id="dayNote" rows="2" placeholder="One line: what shipped / what slipped"></textarea></div>
+    </div>
+  </section>
+
+  <section id="tab-history" class="hidden">
+    <div class="stats">
+      <div class="stat"><div class="num" id="stStreak">0</div><div class="cap">perfect streak</div></div>
+      <div class="stat"><div class="num" id="stWeek">–</div><div class="cap">this week</div></div>
+      <div class="stat"><div class="num" id="stGym">0</div><div class="cap">gym / 7d</div></div>
+    </div>
+    <div class="card"><h2>Last 35 days</h2><div class="grid" id="histGrid"></div></div>
+    <div class="card"><h2>Weekly rollup</h2>
+      <table><thead><tr><th>Week</th><th>Score</th><th>Gym</th><th>Protein avg</th></tr></thead>
+      <tbody id="weekRows"></tbody></table>
+    </div>
+    <div class="card"><h2>Weekly review — <span id="weekLabel"></span></h2>
+      <div class="field"><textarea id="weekNote" rows="3" placeholder="Sunday, 10 minutes: what worked, what slipped, one fix for next week."></textarea></div>
+    </div>
+  </section>
+
+  <section id="tab-settings" class="hidden">
+    <div class="banner" id="localBanner">Local mode — data is saved only in this browser. To sync between phone and desktop, follow the steps in SETUP.md, paste your Firebase config into this file, and host it on GitHub Pages.</div>
+    <div class="card"><h2>Targets</h2>
+      <div class="inrow">
+        <div class="field"><label>Protein target (g/day)</label><input id="setProtein" type="number" inputmode="numeric"></div>
+        <div class="field"><label>Calorie target</label><input id="setCalories" type="number" inputmode="numeric"></div>
+      </div>
+    </div>
+    <div class="card"><h2>Scorecard tasks</h2>
+      <div id="taskEditor"></div>
+      <button class="addbtn" id="addTask">+ add task</button>
+      <div class="hint" style="margin-top:8px">"Rest" allows marking a day as a planned skip (e.g. gym rest day) without breaking your score. Keep this list at 5 items or fewer — every extra item raises the abandonment risk.</div>
+    </div>
+    <div class="card"><h2>Data</h2>
+      <div class="btnrow">
+        <button class="btn" id="exportBtn">Export backup</button>
+        <button class="btn" id="importBtn">Import backup</button>
+      </div>
+      <input type="file" id="importFile" accept=".json" class="hidden">
+    </div>
+  </section>
+</div>
+
+<nav>
+  <button data-tab="today" class="active"><span class="ico">☑</span>Today</button>
+  <button data-tab="history"><span class="ico">▦</span>History</button>
+  <button data-tab="settings"><span class="ico">⚙</span>Settings</button>
+</nav>
+
+<script type="module">
+/* ================= FIREBASE CONFIG =================
+   Paste your Firebase web app config here (see SETUP.md).
+   Until you do, the app runs in local mode (this device only).
+   Example:
+   const FIREBASE_CONFIG = {
+     apiKey: "AIza....",
+     authDomain: "your-project.firebaseapp.com",
+     projectId: "your-project",
+     appId: "1:1234:web:abcd"
+   };
+==================================================== */
+const FIREBASE_CONFIG = {
+  apiKey: "AIza....",
+  authDomain: "daily-system-xxxxx.firebaseapp.com",
+  projectId: "daily-system-xxxxx",
+  appId: "1:1234567890:web:abcdef"
+};
+
+const DEFAULT_PROFILE = {
+  proteinTarget: 120,
+  calorieTarget: 2400,
+  tasks: [
+    {id:'write',   label:'Cafe Tharini — 1 focused hour of writing'},
+    {id:'protein', label:'Hit protein target'},
+    {id:'gym',     label:'Trained (gym)', rest:true},
+    {id:'content', label:'One content byproduct action (BTS / edit / post)'},
+    {id:'sleep',   label:'In bed by 11:30'},
+  ],
+  u: 0
+};
+
+const LS = 'dailySystem.v1';
+let state = { profile: structuredClone(DEFAULT_PROFILE), days:{}, weeks:{} };
+let viewDate = new Date();
+let user=null, db=null, auth=null, fs=null, authMod=null;
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const pad = n => String(n).padStart(2,'0');
+const keyOf = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const todayKey = () => keyOf(new Date());
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function isoWeek(d){
+  const x=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  const day=x.getUTCDay()||7; x.setUTCDate(x.getUTCDate()+4-day);
+  const y=x.getUTCFullYear();
+  const w=Math.ceil((((x-Date.UTC(y,0,1))/86400000)+1)/7);
+  return `${y}-W${pad(w)}`;
+}
+function getDay(k){
+  if(!state.days[k]) state.days[k]={t:{},proteinG:null,calories:null,weightKg:null,lifts:[],note:'',u:0};
+  const d=state.days[k];
+  if(!d.lifts) d.lifts=[]; if(!d.t) d.t={};
+  return d;
+}
+function dayScore(k){
+  const d=state.days[k]; if(!d) return null;
+  let done=0, applicable=0, logged=false;
+  for(const t of state.profile.tasks){
+    const v=(d.t||{})[t.id];
+    if(v==='rest'){ logged=true; continue; }
+    applicable++;
+    if(v===1){ done++; logged=true; }
+  }
+  if(d.proteinG!=null||d.calories!=null||d.weightKg!=null||hasLifts(d)||d.note) logged=true;
+  if(!logged||!applicable) return null;
+  return done/applicable;
+}
+function hasLifts(d){ return !!(d && d.lifts && d.lifts.some(l=>(l.ex&&l.ex.trim())||l.kg||l.reps)); }
+function findPrevLift(exName, beforeKey){
+  const name=exName.trim().toLowerCase(); if(!name) return null;
+  const keys=Object.keys(state.days).filter(k=>k<beforeKey).sort().reverse();
+  for(const k of keys){
+    const d=state.days[k];
+    if(!d.lifts) continue;
+    for(const l of d.lifts){
+      if((l.ex||'').trim().toLowerCase()===name && (l.kg||l.reps))
+        return `last (${k.slice(5)}): ${l.kg||'?'}kg × ${l.reps||'?'}${l.sets?` × ${l.sets}`:''}`;
+    }
+  }
+  return null;
+}
+
+/* ---------- persistence ---------- */
+function loadLocal(){
+  try{
+    const raw=localStorage.getItem(LS);
+    if(raw){
+      const s=JSON.parse(raw);
+      state.days=s.days||{}; state.weeks=s.weeks||{};
+      state.profile={...structuredClone(DEFAULT_PROFILE),...(s.profile||{})};
+      if(!state.profile.tasks||!state.profile.tasks.length) state.profile.tasks=structuredClone(DEFAULT_PROFILE.tasks);
+    }
+  }catch(e){ console.warn('local load failed',e); }
+}
+function saveLocal(){ try{ localStorage.setItem(LS, JSON.stringify(state)); }catch(e){} }
+
+const pending=new Set(); let saveTimer=null;
+function touchDay(k){ getDay(k).u=Date.now(); pending.add('days/'+k); scheduleSave(); }
+function touchProfile(){ state.profile.u=Date.now(); pending.add('profile'); scheduleSave(); }
+function touchWeek(k){ state.weeks[k]={...(state.weeks[k]||{}),u:Date.now()}; pending.add('weeks/'+k); scheduleSave(); }
+function scheduleSave(){ saveLocal(); clearTimeout(saveTimer); saveTimer=setTimeout(flushCloud,800); }
+
+function setSync(cls){ $('#syncDot').className=cls||''; }
+async function flushCloud(){
+  if(!user||!db) return;
+  setSync('sync');
+  const items=[...pending]; pending.clear();
+  for(const p of items){
+    try{
+      if(p==='profile') await fs.setDoc(fs.doc(db,'users',user.uid,'meta','profile'), state.profile);
+      else{
+        const [col,k]=[p.slice(0,p.indexOf('/')), p.slice(p.indexOf('/')+1)];
+        await fs.setDoc(fs.doc(db,'users',user.uid,col,k), col==='days'?state.days[k]:state.weeks[k]);
+      }
+    }catch(e){ pending.add(p); console.warn('sync failed',e); setSync('error'); return; }
+  }
+  setSync('ok');
+}
+async function loadCloud(){
+  setSync('sync');
+  try{
+    const daysSnap=await fs.getDocs(fs.query(fs.collection(db,'users',user.uid,'days'), fs.orderBy('__name__','desc'), fs.limit(180)));
+    const cloud={}; daysSnap.forEach(s=>cloud[s.id]=s.data());
+    for(const [k,v] of Object.entries(state.days)){ const c=cloud[k]; if(!c||(v.u||0)>(c.u||0)) pending.add('days/'+k); }
+    for(const [k,v] of Object.entries(cloud)){ const l=state.days[k]; if(!l||(v.u||0)>=(l.u||0)) state.days[k]=v; }
+    const weeksSnap=await fs.getDocs(fs.query(fs.collection(db,'users',user.uid,'weeks'), fs.orderBy('__name__','desc'), fs.limit(16)));
+    weeksSnap.forEach(s=>{ const v=s.data(), l=state.weeks[s.id]; if(!l||(v.u||0)>=(l.u||0)) state.weeks[s.id]=v; else pending.add('weeks/'+s.id); });
+    const p=await fs.getDoc(fs.doc(db,'users',user.uid,'meta','profile'));
+    if(p.exists()){ const v=p.data(); if((v.u||0)>=(state.profile.u||0)) state.profile={...structuredClone(DEFAULT_PROFILE),...v}; else pending.add('profile'); }
+    else pending.add('profile');
+    saveLocal(); await flushCloud(); renderAll();
+  }catch(e){ console.warn('cloud load failed',e); setSync('error'); }
+}
+
+/* ---------- firebase init ---------- */
+async function initFirebase(){
+  if(!FIREBASE_CONFIG){ $('#authBtn').textContent='Local'; return; }
+  $('#localBanner').classList.add('hidden');
+  const appMod=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+  authMod=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
+  fs=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+  const app=appMod.initializeApp(FIREBASE_CONFIG);
+  auth=authMod.getAuth(app);
+  db=fs.initializeFirestore(app,{localCache:fs.persistentLocalCache()});
+  authMod.onAuthStateChanged(auth,u=>{
+    user=u;
+    $('#authBtn').textContent=u?'Sign out':'Sign in';
+    if(u) loadCloud(); else setSync('');
+  });
+}
+async function toggleAuth(){
+  if(!FIREBASE_CONFIG){ switchTab('settings'); return; }
+  if(user){ await authMod.signOut(auth); return; }
+  const provider=new authMod.GoogleAuthProvider();
+  try{ await authMod.signInWithPopup(auth,provider); }
+  catch(e){ try{ await authMod.signInWithRedirect(auth,provider); }catch(e2){ alert('Sign-in failed: '+e2.message); } }
+}
+
+/* ---------- render: today ---------- */
+function renderToday(){
+  const k=keyOf(viewDate), d=state.days[k]||{t:{},lifts:[]};
+  const isToday=k===todayKey();
+  $('#dateLabel').textContent=isToday?'Today':viewDate.toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'});
+  $('#dateSub').textContent=isToday?viewDate.toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long'}):(k===keyOf(addDays(new Date(),-1))?'Yesterday':'');
+  $('#nextDay').disabled=isToday;
+  $('#nextDay').style.opacity=isToday?0.3:1;
+
+  const list=$('#taskList'); list.innerHTML='';
+  for(const t of state.profile.tasks){
+    const v=(d.t||{})[t.id];
+    const row=document.createElement('div');
+    row.className='task'+(v===1?' done':v==='rest'?' rest':'');
+    row.innerHTML=`<div class="box">${v===1?'✓':v==='rest'?'R':''}</div><div class="lbl">${escapeHtml(t.label)}</div>`;
+    if(t.rest){
+      const rb=document.createElement('button');
+      rb.className='restbtn'; rb.textContent='rest';
+      rb.onclick=e=>{ e.stopPropagation(); const day=getDay(k); day.t[t.id]=day.t[t.id]==='rest'?0:'rest'; touchDay(k); renderToday(); };
+      row.appendChild(rb);
+    }
+    row.onclick=()=>{ const day=getDay(k); day.t[t.id]=day.t[t.id]===1?0:1; touchDay(k); renderToday(); };
+    list.appendChild(row);
+  }
+
+  setNum('#proteinG', d.proteinG); setNum('#calories', d.calories); setNum('#weightKg', d.weightKg);
+  $('#dayNote').value=d.note||'';
+  updateProteinHint(d.proteinG);
+  renderLifts(k);
+}
+function setNum(sel,v){ $(sel).value=(v==null?'':v); }
+function updateProteinHint(v){
+  const t=state.profile.proteinTarget, h=$('#proteinHint');
+  if(v==null||v===''){ h.textContent=`target: ${t}g`; h.className='hint'; }
+  else if(v>=t){ h.textContent=`✓ target hit (${t}g)`; h.className='hint good'; }
+  else{ h.textContent=`${t-v}g to go`; h.className='hint'; }
+}
+function renderLifts(k){
+  const d=state.days[k]||{lifts:[]};
+  const wrap=$('#liftList'); wrap.innerHTML='';
+  (d.lifts||[]).forEach((l,i)=>{
+    const row=document.createElement('div'); row.className='lift';
+    row.innerHTML=`
+      <input class="ex" placeholder="Exercise" value="${escapeAttr(l.ex||'')}">
+      <input class="num" type="number" inputmode="decimal" placeholder="kg" value="${l.kg??''}">
+      <input class="num" type="number" inputmode="numeric" placeholder="reps" value="${l.reps??''}">
+      <input class="num" type="number" inputmode="numeric" placeholder="sets" value="${l.sets??''}">
+      <button class="del">×</button>`;
+    const [ex,kg,reps,sets]=row.querySelectorAll('input');
+    const upd=()=>{ const day=getDay(k); day.lifts[i]={ex:ex.value,kg:num(kg.value),reps:num(reps.value),sets:num(sets.value)}; touchDay(k); };
+    [ex,kg,reps,sets].forEach(inp=>inp.addEventListener('input',upd));
+    ex.addEventListener('blur',()=>{
+      const hint=findPrevLift(ex.value,k);
+      let hEl=row.nextElementSibling;
+      if(hEl&&hEl.classList.contains('lifthint')) hEl.remove();
+      if(hint){ hEl=document.createElement('div'); hEl.className='lifthint'; hEl.textContent=hint; row.after(hEl); }
+    });
+    row.querySelector('.del').onclick=()=>{ const day=getDay(k); day.lifts.splice(i,1); touchDay(k); renderLifts(k); };
+    wrap.appendChild(row);
+    const hint=findPrevLift(l.ex||'',k);
+    if(hint){ const hEl=document.createElement('div'); hEl.className='lifthint'; hEl.textContent=hint; wrap.appendChild(hEl); }
+  });
+}
+function num(v){ return v===''?null:Number(v); }
+
+/* ---------- render: history ---------- */
+function renderHistory(){
+  const today=new Date();
+  // perfect streak
+  let streak=0, cursor=new Date(today);
+  if(dayScore(keyOf(cursor))!==1) cursor=addDays(cursor,-1); // today incomplete doesn't break streak
+  while(dayScore(keyOf(cursor))===1){ streak++; cursor=addDays(cursor,-1); }
+  $('#stStreak').textContent=streak;
+  // this week avg
+  const wk=isoWeek(today);
+  let wSum=0,wN=0;
+  for(let i=0;i<7;i++){ const d=addDays(today,-i); if(isoWeek(d)!==wk) continue; const s=dayScore(keyOf(d)); if(s!=null){wSum+=s;wN++;} }
+  $('#stWeek').textContent=wN?Math.round(wSum/wN*100)+'%':'–';
+  // gym sessions last 7 days
+  let gym=0;
+  for(let i=0;i<7;i++){ const d=state.days[keyOf(addDays(today,-i))]; if(d&&(((d.t||{}).gym===1)||hasLifts(d))) gym++; }
+  $('#stGym').textContent=gym;
+  // grid
+  const grid=$('#histGrid'); grid.innerHTML='';
+  for(let i=34;i>=0;i--){
+    const d=addDays(today,-i), k=keyOf(d), s=dayScore(k);
+    const cell=document.createElement('div');
+    cell.className='cell'+(s==null?'':s===0?' s0':s<0.75?' s1':s<1?' s2':' s3');
+    cell.textContent=d.getDate();
+    cell.title=k+(s==null?' — not logged':` — ${Math.round(s*100)}%`);
+    grid.appendChild(cell);
+  }
+  // weekly rollup: last 4 weeks
+  const rows=$('#weekRows'); rows.innerHTML='';
+  const weeksSeen=[];
+  for(let i=0;i<28;i++){ const w=isoWeek(addDays(today,-i)); if(!weeksSeen.includes(w)) weeksSeen.push(w); }
+  for(const w of weeksSeen.slice(0,4)){
+    let sSum=0,sN=0,g=0,pSum=0,pN=0;
+    for(let i=0;i<35;i++){
+      const d=addDays(today,-i); if(isoWeek(d)!==w) continue;
+      const k=keyOf(d), s=dayScore(k);
+      if(s!=null){sSum+=s;sN++;}
+      const day=state.days[k];
+      if(day){ if(((day.t||{}).gym===1)||hasLifts(day)) g++; if(day.proteinG!=null){pSum+=day.proteinG;pN++;} }
+    }
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${w.slice(5)}</td><td>${sN?Math.round(sSum/sN*100)+'%':'–'}</td><td>${g}</td><td>${pN?Math.round(pSum/pN)+'g':'–'}</td>`;
+    rows.appendChild(tr);
+  }
+  // weekly note
+  $('#weekLabel').textContent=wk;
+  $('#weekNote').value=(state.weeks[wk]||{}).note||'';
+}
+
+/* ---------- render: settings ---------- */
+function renderSettings(){
+  $('#setProtein').value=state.profile.proteinTarget;
+  $('#setCalories').value=state.profile.calorieTarget;
+  const ed=$('#taskEditor'); ed.innerHTML='';
+  state.profile.tasks.forEach((t,i)=>{
+    const row=document.createElement('div'); row.className='taskedit';
+    row.innerHTML=`<input type="text" value="${escapeAttr(t.label)}">
+      <label><input type="checkbox" ${t.rest?'checked':''}>rest</label>
+      <button class="del">×</button>`;
+    row.querySelector('input[type=text]').addEventListener('input',e=>{ t.label=e.target.value; touchProfile(); });
+    row.querySelector('input[type=checkbox]').addEventListener('change',e=>{ t.rest=e.target.checked; touchProfile(); });
+    row.querySelector('.del').onclick=()=>{ state.profile.tasks.splice(i,1); touchProfile(); renderSettings(); };
+    ed.appendChild(row);
+  });
+}
+
+/* ---------- tabs & events ---------- */
+function switchTab(name){
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
+  ['today','history','settings'].forEach(t=>$('#tab-'+t).classList.toggle('hidden',t!==name));
+  if(name==='today') renderToday();
+  if(name==='history') renderHistory();
+  if(name==='settings') renderSettings();
+}
+function renderAll(){
+  const active=document.querySelector('nav button.active').dataset.tab;
+  switchTab(active);
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(s){ return escapeHtml(s); }
+
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
+$('#prevDay').onclick=()=>{ viewDate=addDays(viewDate,-1); renderToday(); };
+$('#nextDay').onclick=()=>{ if(keyOf(viewDate)!==todayKey()){ viewDate=addDays(viewDate,1); renderToday(); } };
+$('#authBtn').onclick=toggleAuth;
+
+['proteinG','calories','weightKg'].forEach(id=>{
+  $('#'+id).addEventListener('input',e=>{
+    const k=keyOf(viewDate), day=getDay(k);
+    day[id]=num(e.target.value); touchDay(k);
+    if(id==='proteinG') updateProteinHint(day.proteinG);
+  });
+});
+$('#dayNote').addEventListener('input',e=>{ const k=keyOf(viewDate); getDay(k).note=e.target.value; touchDay(k); });
+$('#addLift').onclick=()=>{ const k=keyOf(viewDate); getDay(k).lifts.push({ex:'',kg:null,reps:null,sets:null}); touchDay(k); renderLifts(k); };
+$('#weekNote').addEventListener('input',e=>{ const wk=isoWeek(new Date()); state.weeks[wk]={...(state.weeks[wk]||{}),note:e.target.value}; touchWeek(wk); });
+$('#setProtein').addEventListener('input',e=>{ state.profile.proteinTarget=Number(e.target.value)||0; touchProfile(); });
+$('#setCalories').addEventListener('input',e=>{ state.profile.calorieTarget=Number(e.target.value)||0; touchProfile(); });
+$('#addTask').onclick=()=>{ state.profile.tasks.push({id:'t'+Date.now().toString(36),label:'New task'}); touchProfile(); renderSettings(); };
+
+$('#exportBtn').onclick=()=>{
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=`daily-system-${todayKey()}.json`; a.click();
+};
+$('#importBtn').onclick=()=>$('#importFile').click();
+$('#importFile').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const s=JSON.parse(r.result);
+      if(!s.days||!s.profile) throw new Error('not a valid backup');
+      state=s; saveLocal();
+      Object.keys(state.days).forEach(k=>pending.add('days/'+k));
+      Object.keys(state.weeks).forEach(k=>pending.add('weeks/'+k));
+      pending.add('profile'); flushCloud(); renderAll();
+      alert('Backup imported.');
+    }catch(err){ alert('Import failed: '+err.message); }
+  };
+  r.readAsText(f);
+});
+
+/* ---------- boot ---------- */
+loadLocal();
+renderToday();
+initFirebase();
+</script>
+</body>
+</html>
