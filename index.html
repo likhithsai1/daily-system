@@ -313,8 +313,19 @@ async function loadCloud(){
 }
 
 /* ---------- firebase init ---------- */
+function configIsPlaceholder(c){
+  return !c || !c.apiKey || /\.{3}|xxxx/i.test((c.apiKey||'')+(c.projectId||'')+(c.appId||''));
+}
 async function initFirebase(){
-  if(!FIREBASE_CONFIG){ $('#authBtn').textContent='Local'; return; }
+  if(configIsPlaceholder(FIREBASE_CONFIG)){
+    $('#authBtn').textContent='Local';
+    if(FIREBASE_CONFIG){
+      const b=$('#localBanner');
+      b.classList.remove('hidden');
+      b.textContent='⚠ Your FIREBASE_CONFIG is still the example placeholder (contains "...." or "xxxxx"). Sync is OFF. Replace it with the real config from Firebase console → Project settings → Your apps → SDK setup → Config, then re-upload this file.';
+    }
+    return;
+  }
   $('#localBanner').classList.add('hidden');
   const appMod=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
   authMod=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
@@ -329,7 +340,7 @@ async function initFirebase(){
   });
 }
 async function toggleAuth(){
-  if(!FIREBASE_CONFIG){ switchTab('settings'); return; }
+  if(configIsPlaceholder(FIREBASE_CONFIG)){ switchTab('settings'); return; }
   if(user){ await authMod.signOut(auth); return; }
   const provider=new authMod.GoogleAuthProvider();
   try{ await authMod.signInWithPopup(auth,provider); }
